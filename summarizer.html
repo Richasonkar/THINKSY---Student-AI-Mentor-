@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Summarizer - Thinksy</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .summarizer-container {
+            max-width: 1000px;
+            margin: 3rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .summarizer-title {
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            color: var(--primary);
+        }
+
+        .summarizer-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .panel {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .panel-textarea {
+            flex: 1;
+            padding: 1rem;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 1rem;
+            font-family: inherit;
+            resize: vertical;
+            transition: var(--transition);
+            min-height: 300px;
+        }
+
+        .panel-textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .panel-textarea:disabled {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .control-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .control-group label {
+            font-weight: 600;
+            color: var(--dark);
+            font-size: 0.9rem;
+        }
+
+        .control-group input,
+        .control-group select {
+            padding: 0.75rem;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: var(--transition);
+        }
+
+        .control-group input:focus,
+        .control-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .slider-value {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .slider-value span {
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn-summarize {
+            flex: 1;
+            min-width: 150px;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 1rem;
+        }
+
+        .btn-primary-action {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+        }
+
+        .btn-primary-action:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary-action:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-copy {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-copy:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-clear {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-clear:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-download {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .btn-download:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(245, 158, 11, 0.3);
+        }
+
+        .status {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            display: none;
+            font-weight: 500;
+        }
+
+        .status.active {
+            display: block;
+            animation: slideInDown 0.5s ease;
+        }
+
+        .status.success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        .status.loading {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #bfdbfe;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 3px solid rgba(30, 64, 175, 0.3);
+            border-radius: 50%;
+            border-top-color: #1e40af;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes slideInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .stats-display {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .stat-item {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            opacity: 0.9;
+            margin-top: 0.5rem;
+        }
+
+        .keywords-section {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: #f9fafb;
+            border-radius: 8px;
+        }
+
+        .keywords-title {
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--dark);
+        }
+
+        .keywords-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .keyword-tag {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .summarizer-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .control-row {
+                grid-template-columns: 1fr;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .btn-summarize {
+                min-width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <h1 class="logo">🎓 Thinksy</h1>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="index.html#features">Features</a></li>
+            </ul>
+            <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">🌙</button>
+        </div>
+    </nav>
+
+    <!-- Summarizer Container -->
+    <div class="summarizer-container">
+        <h1 class="summarizer-title">✂️ Smart Summarizer</h1>
+
+        <div class="status" id="status"></div>
+
+        <!-- Input and Output -->
+        <div class="summarizer-grid">
+            <!-- Input Panel -->
+            <div class="panel">
+                <div class="panel-header">📝 Original Text</div>
+                <textarea class="panel-textarea" id="originalText" placeholder="Paste your notes or article here..."></textarea>
+            </div>
+
+            <!-- Output Panel -->
+            <div class="panel">
+                <div class="panel-header">✨ Summary</div>
+                <textarea class="panel-textarea" id="summaryText" placeholder="Your summary will appear here..." disabled></textarea>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <div class="control-row">
+                <div class="control-group">
+                    <div class="slider-value">
+                        <label>🎯 Summary Length:</label>
+                        <span id="lengthValue">50%</span>
+                    </div>
+                    <input type="range" id="summaryLength" min="10" max="90" value="50" 
+                        oninput="document.getElementById('lengthValue').textContent = this.value + '%'">
+                </div>
+                <div class="control-group">
+                    <label for="summaryType">📋 Summary Type:</label>
+                    <select id="summaryType">
+                        <option value="general">General Summary</option>
+                        <option value="bullets">Bullet Points</option>
+                        <option value="questions">Q&A Format</option>
+                        <option value="keywords">Key Terms</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="button-group">
+            <button class="btn-summarize btn-primary-action" onclick="summarizeText()">🚀 Summarize Now</button>
+            <button class="btn-summarize btn-copy" onclick="copySummary()" id="copyBtn" style="display:none;">📋 Copy Summary</button>
+            <button class="btn-summarize btn-download" onclick="downloadSummary()" id="downloadBtn" style="display:none;">⬇️ Download</button>
+            <button class="btn-summarize btn-clear" onclick="clearAll()">🗑 Clear All</button>
+        </div>
+
+        <!-- Statistics -->
+        <div class="stats-display" id="statsDisplay" style="display:none;">
+            <div class="stat-item">
+                <div class="stat-value" id="originalWords">0</div>
+                <div class="stat-label">Original Words</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="summaryWords">0</div>
+                <div class="stat-label">Summary Words</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="reductionPercent">0%</div>
+                <div class="stat-label">Reduction</div>
+            </div>
+        </div>
+
+        <!-- Keywords Section -->
+        <div class="keywords-section" id="keywordsSection" style="display:none;">
+            <div class="keywords-title">🔑 Key Terms Extracted:</div>
+            <div class="keywords-list" id="keywordsList"></div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>© 2026 Thinksy | Built for Students</p>
+    </footer>
+
+    <script>
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status active ${type}`;
+            if (type !== 'loading') {
+                setTimeout(() => status.classList.remove('active'), 3000);
+            }
+        }
+
+        function extractKeywords(text) {
+            // Common stop words
+            const stopWords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'is', 'was', 'are', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can', 'this', 'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they']);
+            
+            const words = text.toLowerCase().match(/\b\w+\b/g) || [];
+            const frequency = {};
+            
+            words.forEach(word => {
+                if (word.length > 4 && !stopWords.has(word)) {
+                    frequency[word] = (frequency[word] || 0) + 1;
+                }
+            });
+
+            return Object.entries(frequency)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 8)
+                .map(entry => entry[0]);
+        }
+
+        function generateSummary(text, length, type) {
+            const sentences = text.match(/[^.!?]+[.!?]+/g) || [];
+            const summaryLength = Math.ceil(sentences.length * (length / 100));
+
+            if (type === 'bullets') {
+                const selectedSentences = sentences.slice(0, summaryLength);
+                return selectedSentences
+                    .map((s, i) => `• ${s.trim()}`)
+                    .join('\n');
+            } else if (type === 'questions') {
+                const selectedSentences = sentences.slice(0, summaryLength);
+                return selectedSentences
+                    .map((s, i) => `Q${i + 1}: What about ${s.trim().toLowerCase()}?\nA: ${s.trim()}\n`)
+                    .join('\n');
+            } else if (type === 'keywords') {
+                const keywords = extractKeywords(text);
+                return keywords.map((kw, i) => `${i + 1}. ${kw}`).join('\n');
+            } else {
+                return sentences.slice(0, summaryLength)
+                    .map(s => s.trim())
+                    .join(' ');
+            }
+        }
+
+        function summarizeText() {
+            const originalText = document.getElementById('originalText').value.trim();
+            const summaryLength = parseInt(document.getElementById('summaryLength').value);
+            const summaryType = document.getElementById('summaryType').value;
+
+            if (!originalText) {
+                showStatus('❌ Please enter some text to summarize!', 'error');
+                return;
+            }
+
+            showStatus('⏳ Generating summary...', 'loading');
+
+            setTimeout(() => {
+                const summary = generateSummary(originalText, summaryLength, summaryType);
+                document.getElementById('summaryText').value = summary;
+
+                // Calculate statistics
+                const originalWords = originalText.split(/\s+/).length;
+                const summaryWords = summary.split(/\s+/).length;
+                const reduction = Math.round(((originalWords - summaryWords) / originalWords) * 100);
+
+                document.getElementById('originalWords').textContent = originalWords;
+                document.getElementById('summaryWords').textContent = summaryWords;
+                document.getElementById('reductionPercent').textContent = reduction + '%';
+                document.getElementById('statsDisplay').style.display = 'grid';
+
+                // Extract and display keywords
+                const keywords = extractKeywords(originalText);
+                const keywordsList = document.getElementById('keywordsList');
+                keywordsList.innerHTML = keywords.map(kw => `<span class="keyword-tag">${kw}</span>`).join('');
+                document.getElementById('keywordsSection').style.display = 'block';
+
+                // Show action buttons
+                document.getElementById('copyBtn').style.display = 'inline-block';
+                document.getElementById('downloadBtn').style.display = 'inline-block';
+
+                showStatus('✅ Summary generated successfully!', 'success');
+            }, 1000);
+        }
+
+        function copySummary() {
+            const summaryText = document.getElementById('summaryText').value;
+            if (!summaryText) {
+                showStatus('❌ No summary to copy!', 'error');
+                return;
+            }
+
+            navigator.clipboard.writeText(summaryText).then(() => {
+                showStatus('✅ Summary copied to clipboard!', 'success');
+            }).catch(err => {
+                showStatus('❌ Failed to copy!', 'error');
+            });
+        }
+
+        function downloadSummary() {
+            const summaryText = document.getElementById('summaryText').value;
+            if (!summaryText) {
+                showStatus('❌ No summary to download!', 'error');
+                return;
+            }
+
+            const element = document.createElement('a');
+            element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(summaryText));
+            element.setAttribute('download', 'summary.txt');
+            element.style.display = 'none';
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+            showStatus('✅ Summary downloaded!', 'success');
+        }
+
+        function clearAll() {
+            document.getElementById('originalText').value = '';
+            document.getElementById('summaryText').value = '';
+            document.getElementById('summaryLength').value = 50;
+            document.getElementById('lengthValue').textContent = '50%';
+            document.getElementById('statsDisplay').style.display = 'none';
+            document.getElementById('keywordsSection').style.display = 'none';
+            document.getElementById('copyBtn').style.display = 'none';
+            document.getElementById('downloadBtn').style.display = 'none';
+            document.getElementById('status').classList.remove('active');
+        }
+
+        const themeToggle = document.getElementById('themeToggle');
+        const root = document.documentElement;
+        const savedTheme = localStorage.getItem('theme') || 'light';
+
+        function applyTheme(theme) {
+            root.setAttribute('data-theme', theme);
+            themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+            localStorage.setItem('theme', theme);
+        }
+
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = root.getAttribute('data-theme') || 'light';
+            const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            applyTheme(nextTheme);
+        });
+
+        applyTheme(savedTheme);
+    </script>
+
+</body>
+</html>
